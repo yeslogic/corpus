@@ -327,14 +327,29 @@ where
     F1: FnOnce(&[char]) -> Option<usize>,
     F2: FnOnce(&[char]) -> Option<usize>,
 {
-    if let Some(n1) = f1(cs) {
-        if let Some(n2) = f2(cs) {
-            Some(cmp::max(n1, n2))
-        } else {
-            Some(n1)
-        }
-    } else {
-        f2(cs)
+    let res1 = f1(cs);
+    let res2 = f2(cs);
+    match (res1, res2) {
+        (Some(n1), Some(n2)) => Some(cmp::max(n1, n2)),
+        (Some(n1), None) => Some(n1),
+        (None, Some(n2)) => Some(n2),
+        (None, None) => None,
+    }
+}
+
+fn match_either_seq<F1, F2, G>(cs: &[char], f1: F1, f2: F2, g: G) -> Option<usize>
+where
+    F1: FnOnce(&[char]) -> Option<usize>,
+    F2: FnOnce(&[char]) -> Option<usize>,
+    G: Copy + Fn(&[char]) -> Option<usize>,
+{
+    let res1 = match_seq(cs, f1, &g);
+    let res2 = match_seq(cs, f2, &g);
+    match (res1, res2) {
+        (Some(n1), Some(n2)) => Some(cmp::max(n1, n2)),
+        (Some(n1), None) => Some(n1),
+        (None, Some(n2)) => Some(n2),
+        (None, None) => None,
     }
 }
 
@@ -597,33 +612,28 @@ fn match_vowel_syllable(cs: &[char]) -> Option<usize> {
 
 fn match_standalone_syllable(cs: &[char]) -> Option<usize> {
     //println!("match_standalone_syllable {:?}", cs);
-    match_seq(
+    match_either_seq(
         cs,
         |cs| {
-            match_either(
+            match_seq(
                 cs,
                 |cs| {
-                    match_seq(
-                        cs,
-                        |cs| {
-                            match_optional(cs, |cs| {
-                                match_either(
-                                    cs,
-                                    |cs| match_one(cs, repha),
-                                    |cs| match_one(cs, consonant_with_stacker),
-                                )
-                            })
-                        },
-                        |cs| match_one(cs, placeholder),
-                    )
+                    match_optional(cs, |cs| {
+                        match_either(
+                            cs,
+                            |cs| match_one(cs, repha),
+                            |cs| match_one(cs, consonant_with_stacker),
+                        )
+                    })
                 },
-                |cs| {
-                    match_seq(
-                        cs,
-                        |cs| match_optional(cs, match_reph),
-                        |cs| match_one(cs, dotted_circle),
-                    )
-                },
+                |cs| match_one(cs, placeholder),
+            )
+        },
+        |cs| {
+            match_seq(
+                cs,
+                |cs| match_optional(cs, match_reph),
+                |cs| match_one(cs, dotted_circle),
             )
         },
         |cs| {
