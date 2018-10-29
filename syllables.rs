@@ -817,7 +817,7 @@ fn indic_character(ch: char) -> (Option<ShapingClass>, Option<MarkPlacementSubcl
         0x097F => (Some(Consonant), None),          // Bba
 
         // Bengali character table
-        0x0980 => (None, None),                                       // Anji
+        0x0980 => (Some(Placeholder), None),                          // Anji
         0x0981 => (Some(Bindu), Some(TopPosition)),                   // Candrabindu
         0x0982 => (Some(Bindu), Some(RightPosition)),                 // Anusvara
         0x0983 => (Some(Visarga), Some(RightPosition)),               // Visarga
@@ -1981,15 +1981,15 @@ fn indic_character(ch: char) -> (Option<ShapingClass>, Option<MarkPlacementSubcl
         0x1CE6 => (None, Some(Overstruck)),                // Sign Reversed Visarga Anudatta
         0x1CE7 => (None, Some(Overstruck)),                // Sign Visarga Udatta With Tail
         0x1CE8 => (Some(Avagraha), Some(Overstruck)),      // Sign Visarga Anudatta With Tail
-        0x1CE9 => (Some(Avagraha), None),                  // Sign Anusvara Antargomukha
+        0x1CE9 => (Some(Symbol), None),                    // Sign Anusvara Antargomukha
         0x1CEA => (None, None),                            // Sign Anusvara Bahirgomukha
         0x1CEB => (None, None),                            // Sign Anusvara Vamagomukha
-        0x1CEC => (Some(Avagraha), None),                  // Sign Anusvara Vamagomukha With Tail
+        0x1CEC => (Some(Symbol), None),                    // Sign Anusvara Vamagomukha With Tail
         0x1CED => (Some(Avagraha), Some(BottomPosition)),  // Sign Tiryak
-        0x1CEE => (Some(Avagraha), None),                  // Sign Hexiform Long Anusvara
+        0x1CEE => (Some(Symbol), None),                    // Sign Hexiform Long Anusvara
         0x1CEF => (None, None),                            // Sign Long Anusvara
         0x1CF0 => (None, None),                            // Sign Rthang Long Anusvara
-        0x1CF1 => (Some(Avagraha), None),                  // Sign Anusvara Ubhayato Mukha
+        0x1CF1 => (Some(Symbol), None),                    // Sign Anusvara Ubhayato Mukha
         0x1CF2 => (Some(Visarga), None),                   // Sign Ardhavisarga
         0x1CF3 => (Some(Visarga), None),                   // Sign Rotated Ardhavisarga
         0x1CF4 => (Some(Cantillation), Some(TopPosition)), // Tone Candra Above
