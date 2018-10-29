@@ -1,4 +1,5 @@
 use std::collections::{HashSet, HashMap};
+use std::cmp;
 use std::io;
 use std::io::BufRead;
 
@@ -321,14 +322,17 @@ where
     }
 }
 
-// order is significant, matches left first then right on failure
 fn match_either<F1, F2>(cs: &[char], f1: F1, f2: F2) -> Option<usize>
 where
     F1: FnOnce(&[char]) -> Option<usize>,
     F2: FnOnce(&[char]) -> Option<usize>,
 {
-    if let Some(n) = f1(cs) {
-        Some(n)
+    if let Some(n1) = f1(cs) {
+        if let Some(n2) = f2(cs) {
+            Some(cmp::max(n1, n2))
+        } else {
+            Some(n1)
+        }
     } else {
         f2(cs)
     }
