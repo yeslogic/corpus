@@ -1,0 +1,7 @@
+.DS_Store
+
+data/*
+!data/*.bz2
+
+corpus
+syllables
