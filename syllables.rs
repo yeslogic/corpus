@@ -231,6 +231,10 @@ fn other(ch: char) -> bool {
     }
 }
 
+fn match_unit(_cs: &[char]) -> Option<usize> {
+    Some(0)
+}
+
 fn match_one<F>(cs: &[char], f: F) -> Option<usize>
 where
     F: FnOnce(char) -> bool,
@@ -268,21 +272,37 @@ where
     }
 }
 
-fn match_repeat_upto<F>(mut cs: &[char], mut max: usize, f: F) -> Option<usize>
+fn match_repeat_num<F>(mut cs: &[char], num: usize, f: &F) -> Option<usize>
 where
     F: Fn(&[char]) -> Option<usize>,
 {
     let mut total: usize = 0;
-    while max > 0 {
+    for _i in 0..num {
         if let Some(n) = f(cs) {
-            max -= 1;
             total += n;
             cs = &cs[n..];
         } else {
-            break;
+            return None;
         }
     }
     Some(total)
+}
+
+fn match_repeat_upto<F, G>(cs: &[char], max: usize, f: F, g: G) -> Option<usize>
+where
+    F: Fn(&[char]) -> Option<usize>,
+    G: Fn(&[char]) -> Option<usize>,
+{
+    let mut best = None;
+
+    for i in 0..max {
+        if let Some(nf) = match_repeat_num(cs, i, &f) {
+            if let Some(ng) = g(&cs[nf..]) {
+                best = Some(nf+ng)
+            }
+        }
+    }
+    best
 }
 
 fn match_seq<F1, F2>(cs: &[char], f1: F1, f2: F2) -> Option<usize>
@@ -370,9 +390,7 @@ fn match_s(cs: &[char]) -> Option<usize> {
 
 fn match_matra_group(cs: &[char]) -> Option<usize> {
     //println!("match_matra_group {:?}", cs);
-    match_seq(
-        cs,
-        |cs| match_repeat_upto(cs, 3, match_z),
+    match_repeat_upto(cs, 3, match_z,
         |cs| {
             match_seq(
                 cs,
@@ -421,8 +439,8 @@ fn match_syllable_tail(cs: &[char]) -> Option<usize> {
         |cs| {
             match_seq(
                 cs,
-                |cs| match_repeat_upto(cs, 3, |cs| match_one(cs, avagraha)),
-                |cs| match_repeat_upto(cs, 2, |cs| match_one(cs, vedic_sign)),
+                |cs| match_repeat_upto(cs, 3, |cs| match_one(cs, avagraha), match_unit),
+                |cs| match_repeat_upto(cs, 2, |cs| match_one(cs, vedic_sign), match_unit),
             )
         },
     )
@@ -494,7 +512,7 @@ fn match_halant_or_matra_group(cs: &[char]) -> Option<usize> {
                                 match_seq(cs, |cs| match_one(cs, halant), |cs| match_one(cs, zwj))
                             })
                         },
-                        |cs| match_repeat_upto(cs, 4, match_matra_group),
+                        |cs| match_repeat_upto(cs, 4, match_matra_group, match_unit),
                     )
                 },
                 match_halant_group,
@@ -517,9 +535,8 @@ fn match_consonant_syllable(cs: &[char]) -> Option<usize> {
             })
         },
         |cs| {
-            match_seq(
-                cs,
-                |cs| match_repeat_upto(cs, 4, |cs| match_seq(cs, match_cn, match_halant_group)),
+            match_repeat_upto(cs, 4,
+                |cs| match_seq(cs, match_cn, match_halant_group),
                 |cs| {
                     match_seq(cs, match_cn, |cs| {
                         match_seq(cs, match_medial_group, |cs| {
@@ -550,12 +567,9 @@ fn match_vowel_syllable(cs: &[char]) -> Option<usize> {
                                 cs,
                                 |cs| match_one(cs, zwj),
                                 |cs| {
-                                    match_seq(
-                                        cs,
+                                    match_repeat_upto(cs, 4,
                                         |cs| {
-                                            match_repeat_upto(cs, 4, |cs| {
-                                                match_seq(cs, match_halant_group, match_cn)
-                                            })
+                                            match_seq(cs, match_halant_group, match_cn)
                                         },
                                         |cs| {
                                             match_seq(cs, match_medial_group, |cs| {
@@ -613,12 +627,9 @@ fn match_standalone_syllable(cs: &[char]) -> Option<usize> {
                 cs,
                 |cs| match_optional(cs, |cs| match_one(cs, nukta)),
                 |cs| {
-                    match_seq(
-                        cs,
+                    match_repeat_upto(cs, 4,
                         |cs| {
-                            match_repeat_upto(cs, 4, |cs| {
-                                match_seq(cs, match_halant_group, match_cn)
-                            })
+                            match_seq(cs, match_halant_group, match_cn)
                         },
                         |cs| {
                             match_seq(cs, match_medial_group, |cs| {
@@ -648,12 +659,9 @@ fn match_broken_syllable(cs: &[char]) -> Option<usize> {
                     cs,
                     |cs| match_optional(cs, |cs| match_one(cs, nukta)),
                     |cs| {
-                        match_seq(
-                            cs,
+                        match_repeat_upto(cs, 4,
                             |cs| {
-                                match_repeat_upto(cs, 4, |cs| {
-                                    match_seq(cs, match_halant_group, match_cn)
-                                })
+                                match_seq(cs, match_halant_group, match_cn)
                             },
                             |cs| {
                                 match_seq(cs, match_medial_group, |cs| {
