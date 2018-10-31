@@ -1,7 +1,9 @@
 .DS_Store
 
-data/*
-!data/*.bz2
+wikipedia/*.xml
+
+data/words.*
+data/syl.*
 
 corpus
 syllables
