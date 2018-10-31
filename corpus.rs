@@ -28,9 +28,9 @@ fn main() {
         let mut set = HashSet::new();
         for res in stdin.lock().lines() {
             let line = res.unwrap();
-            for word in line.split(|c| !indic_script_char(script, c))
+            for word in line.split(|c| !char_of_interest(script, c))
                 .filter(|w| cool_word(script, w))
-                .map(String::from)
+                .map(make_word)
             {
                 set.insert(word);
             }
@@ -59,6 +59,10 @@ fn get_script(s: &str) -> Option<Script> {
         "si" => Some(Script::Sinhala),
         _ => None,
     }
+}
+
+fn char_of_interest(script: Script, c: char) -> bool {
+    indic_script_char(script, c) || latin_combining_char(c)
 }
 
 fn indic_script_char(script: Script, c: char) -> bool {
@@ -123,6 +127,11 @@ fn indic_script_char(script: Script, c: char) -> bool {
             misc_char(c)
         },
     }
+}
+
+fn latin_combining_char(c: char) -> bool {
+    let cp = c as u32;
+    cp >= 0x300 && cp <= 0x36F
 }
 
 fn indic_script_specific_char(script: Script, c: char) -> bool {
@@ -214,6 +223,10 @@ fn misc_char(c: char) -> bool {
 
 fn cool_word(script: Script, word: &str) -> bool {
     word.chars().any(|c| indic_script_specific_char(script, c))
+}
+
+fn make_word(s: &str) -> String {
+    String::from(s.trim_left_matches(latin_combining_char))
 }
 
 /*

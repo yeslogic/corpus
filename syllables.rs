@@ -31,14 +31,21 @@ fn main() {
 }
 
 fn friendly(s: &str) -> String {
-    let v: Vec<String> = s.chars().map(|c| indic_name(c).unwrap_or("?")).map(|s| {
+    let v: Vec<String> = s.chars().map(char_to_string).map(|s| {
         let mut ss = String::new();
         ss.push('[');
-        ss.push_str(s);
+        ss.push_str(&s);
         ss.push(']');
         ss
     }).collect();
     v.as_slice().join(" + ")
+}
+
+fn char_to_string(c: char) -> String {
+    match indic_name(c) {
+        Some(s) => String::from(s),
+        None => format!("U+{:X}", c as u32),
+    }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
