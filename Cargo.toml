@@ -1,0 +1,14 @@
+[package]
+name = "corpus"
+version = "0.1.0"
+authors = ["Michael Day <mikeday@yeslogic.com>"]
+
+[dependencies]
+
+[[bin]]
+name = "corpus"
+path = "corpus.rs"
+
+[[bin]]
+name = "syllables"
+path = "syllables.rs"
