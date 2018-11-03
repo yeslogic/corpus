@@ -42,7 +42,7 @@ fn main() {
             let json_re = Regex::new(r"[^\\]\\u([0-9a-fA-F]{4})").unwrap();
             let html_re = Regex::new(r"&#([0-9]*);").unwrap();
             for res in stdin.lock().lines() {
-                let line = res.unwrap();
+                let line = res.unwrap_or(String::from("")); // ignore invalid UTF-8
                 let line = match escape {
                     Escape::None => Cow::from(line),
                     Escape::Json => {
