@@ -1,7 +1,13 @@
 use std::collections::HashSet;
+use std::borrow::Cow;
+use std::char;
 use std::env;
 use std::io;
 use std::io::BufRead;
+
+extern crate regex;
+
+use regex::{Regex, Captures};
 
 #[derive(Copy, Clone)]
 enum Script {
@@ -17,28 +23,58 @@ enum Script {
     Sinhala,
 }
 
+enum Escape {
+    None,
+    Json,
+    Html,
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
-    if args.len() != 2 {
-        println!("Usage: corpus SCRIPT");
+    if args.len() != 3 {
+        println!("Usage: corpus SCRIPT [none|json|html]");
         return;
     }
     if let Some(script) = get_script(&args[1]) {
-        let stdin = io::stdin();
-        let mut set = HashSet::new();
-        for res in stdin.lock().lines() {
-            let line = res.unwrap();
-            for word in line.split(|c| !char_of_interest(script, c))
-                .filter(|w| cool_word(script, w))
-                .map(make_word)
-            {
-                set.insert(word);
+        if let Some(escape) = get_escape(&args[2]) {
+            let stdin = io::stdin();
+            let mut set = HashSet::new();
+            let json_re = Regex::new(r"[^\\]\\u([0-9a-fA-F]{4})").unwrap();
+            let html_re = Regex::new(r"&#([0-9]*);").unwrap();
+            for res in stdin.lock().lines() {
+                let line = res.unwrap();
+                let line = match escape {
+                    Escape::None => Cow::from(line),
+                    Escape::Json => {
+                        json_re.replace_all(&line, |caps: &Captures| {
+                            let ds: Vec<u32> = caps[1].chars().map(|c| c.to_digit(16).unwrap()).collect();
+                            let u = (ds[0] << 12) | (ds[1] << 8) | (ds[2] << 4) | ds[3];
+                            let c = char::from_u32(u).unwrap_or(' '); // to catch surrogates
+                            c.to_string()
+                        })
+                    },
+                    Escape::Html => {
+                        html_re.replace_all(&line, |caps: &Captures| {
+                            let u = caps[1].parse::<u32>().unwrap();
+                            let c = char::from_u32(u).unwrap_or(' '); // to catch surrogates
+                            c.to_string()
+                        })
+                    },
+                };
+                for word in line.split(|c| !char_of_interest(script, c))
+                    .filter(|w| cool_word(script, w))
+                    .map(make_word)
+                {
+                    set.insert(word);
+                }
             }
-        }
-        let mut words: Vec<String> = set.drain().collect();
-        words.sort();
-        for word in words {
-            println!("{}", word);
+            let mut words: Vec<String> = set.drain().collect();
+            words.sort();
+            for word in words {
+                println!("{}", word);
+            }
+        } else {
+            println!("unknown escape");
         }
     } else {
         println!("unknown script");
@@ -57,6 +93,15 @@ fn get_script(s: &str) -> Option<Script> {
         "ml" => Some(Script::Malayalam),
         "kn" => Some(Script::Kannada),
         "si" => Some(Script::Sinhala),
+        _ => None,
+    }
+}
+
+fn get_escape(s: &str) -> Option<Escape> {
+    match s {
+        "none" => Some(Escape::None),
+        "json" => Some(Escape::Json),
+        "html" => Some(Escape::Html),
         _ => None,
     }
 }
