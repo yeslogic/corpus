@@ -1,3 +1,4 @@
+bad: "\u{b00}" [U+B00] in line: [U+B00]
 bad: "\u{b34}ାଇ" [U+B34] + [Sign Aa] + [I] in line: [O] + [U+B34] + [Sign Aa] + [I]
 bad: "\u{b49}" [U+B49] in line: [Ya] + [U+B49]
 bad: "\u{b49}ନସର୍ନ" [U+B49] + [Na] + [Sa] + [Ra] + [Virama] + [Na] in line: [Ka] + [U+B49] + [Na] + [Sa] + [Ra] + [Virama] + [Na]
