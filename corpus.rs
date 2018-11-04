@@ -40,7 +40,7 @@ fn main() {
             let stdin = io::stdin();
             let mut set = HashSet::new();
             let json_re = Regex::new(r"[^\\]\\u([0-9a-fA-F]{4})").unwrap();
-            let html_re = Regex::new(r"&#([0-9]*);").unwrap();
+            let html_re = Regex::new(r"&#([0-9]*);|&zwj;|&zwnj;").unwrap();
             for res in stdin.lock().lines() {
                 let line = res.unwrap_or(String::from("")); // ignore invalid UTF-8
                 let line = match escape {
@@ -55,9 +55,15 @@ fn main() {
                     },
                     Escape::Html => {
                         html_re.replace_all(&line, |caps: &Captures| {
-                            let u = caps[1].parse::<u32>().unwrap();
-                            let c = char::from_u32(u).unwrap_or(' '); // to catch surrogates
-                            c.to_string()
+                            match &caps[0] {
+                                "&zwj;" => '\u{200D}'.to_string(),
+                                "&zwnj;" => '\u{200C}'.to_string(),
+                                _ => {
+                                    let u = caps[1].parse::<u32>().unwrap();
+                                    let c = char::from_u32(u).unwrap_or(' '); // to catch surrogates
+                                    c.to_string()
+                                }
+                            }
                         })
                     },
                 };
