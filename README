@@ -2,17 +2,18 @@ README
 
 To regenerate the data from scratch:
 
- - download Wikipedia dumps (check wikipedia/README)
+ - compile corpus and syllables (cargo build)
 
- - compile corpus and syllables (rustc -O ...)
+ - download Wikipedia dumps (check wikipedia/download.sh)
+
+ - collect other data and run corpus on it to create files in words/
 
  - run ./run.sh
-
 
 SCRIPTS
 
 bn = Bengali
-hi = Hindi / Devanagari
+hi = Hindi / Devanagari / Marathi
 ta = Tamil
 or = Oriya
 te = Telugu
@@ -24,7 +25,26 @@ si = Sinhala
 
 SOURCES
 
+Indian translations of "Code Swaraj" by Carl Malamud.
+
+Dictionaries:
+
+ - http://ltrc.iiit.ac.in/onlineServices/Dictionaries/Shabdanjali/Shabdanjali.tgz
+ - https://sanskritdocuments.org/hindi/dict/eng-hin_unic.html
+ - http://ltrc.iiit.ac.in/onlineServices/Dictionaries/eng-hin-utf/eng-hindi-dict-utf8.zip
+
 Wikipedia:
+
+ - https://dumps.wikimedia.org/bnwiki/20190801/bnwiki-20190801-pages-articles-multistream.xml.bz2
+ - https://dumps.wikimedia.org/hiwiki/20190801/hiwiki-20190801-pages-articles-multistream.xml.bz2
+ - https://dumps.wikimedia.org/tawiki/20190801/tawiki-20190801-pages-articles-multistream.xml.bz2
+ - https://dumps.wikimedia.org/orwiki/20190801/orwiki-20190801-pages-articles-multistream.xml.bz2
+ - https://dumps.wikimedia.org/tewiki/20190801/tewiki-20190801-pages-articles-multistream.xml.bz2
+ - https://dumps.wikimedia.org/guwiki/20190801/guwiki-20190801-pages-articles-multistream.xml.bz2
+ - https://dumps.wikimedia.org/pawiki/20190801/pawiki-20190801-pages-articles-multistream.xml.bz2
+ - https://dumps.wikimedia.org/mlwiki/20190801/mlwiki-20190801-pages-articles-multistream.xml.bz2
+ - https://dumps.wikimedia.org/knwiki/20190801/knwiki-20190801-pages-articles-multistream.xml.bz2
+ - https://dumps.wikimedia.org/siwiki/20190801/siwiki-20190801-pages-articles-multistream.xml.bz2
 
  - https://dumps.wikimedia.org/bnwiki/20181001/bnwiki-20181001-pages-articles-multistream.xml.bz2
  - https://dumps.wikimedia.org/hiwiki/20181001/hiwiki-20181001-pages-articles-multistream.xml.bz2
