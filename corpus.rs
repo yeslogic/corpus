@@ -277,7 +277,7 @@ fn cool_word(script: Script, word: &str) -> bool {
 }
 
 fn make_word(s: &str) -> String {
-    String::from(s.trim_left_matches(latin_combining_char))
+    String::from(s.trim_start_matches(latin_combining_char))
 }
 
 /*
