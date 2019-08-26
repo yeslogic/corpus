@@ -90,6 +90,15 @@ enum MarkPlacementSubclass {
     Overstruck,
 }
 
+#[derive(Copy, Clone, Debug)]
+enum Syllable {
+    Consonant,
+    Vowel,
+    Standalone,
+    Symbol,
+    Broken,
+}
+
 fn shaping_class(ch: char) -> Option<ShapingClass> {
     let (opt_shaping, _) = indic_character(ch);
     opt_shaping
@@ -243,36 +252,22 @@ fn match_unit(_cs: &[char]) -> Option<usize> {
     Some(0)
 }
 
-fn match_one<F>(cs: &[char], f: F) -> Option<usize>
-where
-    F: FnOnce(char) -> bool,
-{
-    if cs.len() > 0 && f(cs[0]) {
+fn match_one(cs: &[char], f: impl FnOnce(char) -> bool) -> Option<usize> {
+    if !cs.is_empty() && f(cs[0]) {
         Some(1)
     } else {
         None
     }
 }
 
-fn match_nonempty<F>(cs: &[char], f: F) -> Option<usize>
-where
-    F: FnOnce(&[char]) -> Option<usize>,
-{
-    if let Some(n) = f(cs) {
-        if n > 0 {
-            Some(n)
-        } else {
-            None
-        }
-    } else {
-        None
+fn match_nonempty(cs: &[char], f: impl FnOnce(&[char]) -> Option<usize>) -> Option<usize> {
+    match f(cs) {
+        Some(n) if n > 0 => Some(n),
+        _ => None,
     }
 }
 
-fn match_optional<F>(cs: &[char], f: F) -> Option<usize>
-where
-    F: FnOnce(&[char]) -> Option<usize>,
-{
+fn match_optional(cs: &[char], f: impl FnOnce(&[char]) -> Option<usize>) -> Option<usize> {
     if let Some(n) = f(cs) {
         Some(n)
     } else {
@@ -280,18 +275,19 @@ where
     }
 }
 
-fn match_optional_seq<F, G>(cs: &[char], f: F, g: G) -> Option<usize>
-where
-    F: FnOnce(&[char]) -> Option<usize>,
-    G: Copy + Fn(&[char]) -> Option<usize>,
-{
+fn match_optional_seq(
+    cs: &[char],
+    f: impl FnOnce(&[char]) -> Option<usize>,
+    g: impl Copy + Fn(&[char]) -> Option<usize>,
+) -> Option<usize> {
     match_either(cs, g, |cs| match_seq(cs, f, g))
 }
 
-fn match_repeat_num<F>(mut cs: &[char], num: usize, f: &F) -> Option<usize>
-where
-    F: Fn(&[char]) -> Option<usize>,
-{
+fn match_repeat_num(
+    mut cs: &[char],
+    num: usize,
+    f: &impl Fn(&[char]) -> Option<usize>,
+) -> Option<usize> {
     let mut total: usize = 0;
     for _i in 0..num {
         if let Some(n) = f(cs) {
@@ -304,28 +300,29 @@ where
     Some(total)
 }
 
-fn match_repeat_upto<F, G>(cs: &[char], max: usize, f: F, g: G) -> Option<usize>
-where
-    F: Fn(&[char]) -> Option<usize>,
-    G: Fn(&[char]) -> Option<usize>,
-{
+fn match_repeat_upto(
+    cs: &[char],
+    max: usize,
+    f: impl Fn(&[char]) -> Option<usize>,
+    g: impl Fn(&[char]) -> Option<usize>,
+) -> Option<usize> {
     let mut best = None;
 
-    for i in 0..max {
+    for i in 0..=max {
         if let Some(nf) = match_repeat_num(cs, i, &f) {
             if let Some(ng) = g(&cs[nf..]) {
-                best = Some(nf+ng)
+                best = Some(nf + ng)
             }
         }
     }
     best
 }
 
-fn match_seq<F1, F2>(cs: &[char], f1: F1, f2: F2) -> Option<usize>
-where
-    F1: FnOnce(&[char]) -> Option<usize>,
-    F2: FnOnce(&[char]) -> Option<usize>,
-{
+fn match_seq(
+    cs: &[char],
+    f1: impl FnOnce(&[char]) -> Option<usize>,
+    f2: impl FnOnce(&[char]) -> Option<usize>,
+) -> Option<usize> {
     if let Some(n1) = f1(cs) {
         if let Some(n2) = f2(&cs[n1..]) {
             Some(n1 + n2)
@@ -337,11 +334,11 @@ where
     }
 }
 
-fn match_either<F1, F2>(cs: &[char], f1: F1, f2: F2) -> Option<usize>
-where
-    F1: FnOnce(&[char]) -> Option<usize>,
-    F2: FnOnce(&[char]) -> Option<usize>,
-{
+fn match_either(
+    cs: &[char],
+    f1: impl FnOnce(&[char]) -> Option<usize>,
+    f2: impl FnOnce(&[char]) -> Option<usize>,
+) -> Option<usize> {
     let res1 = f1(cs);
     let res2 = f2(cs);
     match (res1, res2) {
@@ -352,12 +349,12 @@ where
     }
 }
 
-fn match_either_seq<F1, F2, G>(cs: &[char], f1: F1, f2: F2, g: G) -> Option<usize>
-where
-    F1: FnOnce(&[char]) -> Option<usize>,
-    F2: FnOnce(&[char]) -> Option<usize>,
-    G: Copy + Fn(&[char]) -> Option<usize>,
-{
+fn match_either_seq(
+    cs: &[char],
+    f1: impl FnOnce(&[char]) -> Option<usize>,
+    f2: impl FnOnce(&[char]) -> Option<usize>,
+    g: impl Copy + Fn(&[char]) -> Option<usize>,
+) -> Option<usize> {
     let res1 = match_seq(cs, f1, &g);
     let res2 = match_seq(cs, f2, &g);
     match (res1, res2) {
@@ -369,17 +366,15 @@ where
 }
 
 fn match_c(cs: &[char]) -> Option<usize> {
-    //println!("match_c {:?}", cs);
     match_either(cs, |cs| match_one(cs, consonant), |cs| match_one(cs, ra))
 }
 
 fn match_z(cs: &[char]) -> Option<usize> {
-    //println!("match_z {:?}", cs);
     match_either(cs, |cs| match_one(cs, zwj), |cs| match_one(cs, zwnj))
 }
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 fn match_reph(cs: &[char]) -> Option<usize> {
-    //println!("match_reph {:?}", cs);
     match_either(
         cs,
         |cs| match_seq(cs, |cs| match_one(cs, ra), |cs| match_one(cs, halant)),
@@ -387,8 +382,8 @@ fn match_reph(cs: &[char]) -> Option<usize> {
     )
 }
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 fn match_cn(cs: &[char]) -> Option<usize> {
-    //println!("match_cn {:?}", cs);
     match_seq(cs,
         match_c,
         |cs| match_optional_seq(cs,
@@ -398,8 +393,8 @@ fn match_cn(cs: &[char]) -> Option<usize> {
     )
 }
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 fn match_forced_rakar(cs: &[char]) -> Option<usize> {
-    //println!("match_forced_rakar {:?}", cs);
     match_seq(
         cs,
         |cs| match_one(cs, zwj),
@@ -414,7 +409,6 @@ fn match_forced_rakar(cs: &[char]) -> Option<usize> {
 }
 
 fn match_s(cs: &[char]) -> Option<usize> {
-    //println!("match_s {:?}", cs);
     match_seq(
         cs,
         |cs| match_one(cs, symbol),
@@ -422,8 +416,8 @@ fn match_s(cs: &[char]) -> Option<usize> {
     )
 }
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 fn match_matra_group(cs: &[char]) -> Option<usize> {
-    //println!("match_matra_group {:?}", cs);
     match_repeat_upto(cs, 3, match_z,
         |cs| {
             match_seq(
@@ -442,8 +436,8 @@ fn match_matra_group(cs: &[char]) -> Option<usize> {
     )
 }
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 fn match_syllable_tail(cs: &[char]) -> Option<usize> {
-    //println!("match_syllable_tail {:?}", cs);
     match_optional_seq(cs,
         |cs| match_optional_seq(cs,
             match_z,
@@ -462,8 +456,8 @@ fn match_syllable_tail(cs: &[char]) -> Option<usize> {
     )
 }
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 fn match_halant_group(cs: &[char]) -> Option<usize> {
-    //println!("match_halant_group {:?}", cs);
     match_optional_seq(cs,
         match_z,
         |cs| match_seq(cs,
@@ -478,7 +472,7 @@ fn match_halant_group(cs: &[char]) -> Option<usize> {
     )
 }
 
-// this is not used as we expand it inline
+// This is not used as we expand it inline
 /*
 fn match_final_halant_group(cs: &[char]) -> Option<usize> {
     match_either(cs,
@@ -490,32 +484,27 @@ fn match_final_halant_group(cs: &[char]) -> Option<usize> {
 */
 
 fn match_medial_group(cs: &[char]) -> Option<usize> {
-    //println!("match_medial_group {:?}", cs);
     match_optional(cs, |cs| match_one(cs, consonant_medial))
 }
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 fn match_halant_or_matra_group(cs: &[char]) -> Option<usize> {
-    //println!("match_halant_or_matra_group {:?}", cs);
     // this can match a short sequence so we expand and reorder it
     match_either(cs,
         |cs| match_seq(cs,
             |cs| match_one(cs, halant),
             |cs| match_one(cs, zwnj)),
+        // Currently deviates from spec. See:
+        // https://github.com/n8willis/opentype-shaping-documents/issues/72
         |cs| match_either(cs,
-            |cs| match_optional_seq(cs,
-                |cs| match_seq(cs,
-                    |cs| match_one(cs, halant),
-                    |cs| match_one(cs, zwj)
-                ),
-                |cs| match_repeat_upto(cs, 4, match_matra_group, match_unit),
-            ),
+            |cs| match_repeat_upto(cs, 4, match_matra_group, match_unit),
             match_halant_group,
         )
     )
 }
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 fn match_consonant_syllable(cs: &[char]) -> Option<usize> {
-    //println!("match_consonant_syllable {:?}", cs);
     match_optional_seq(cs,
         |cs| match_either(cs,
             |cs| match_one(cs, repha),
@@ -539,8 +528,8 @@ fn match_consonant_syllable(cs: &[char]) -> Option<usize> {
     )
 }
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 fn match_vowel_syllable(cs: &[char]) -> Option<usize> {
-    //println!("match_vowel_syllable {:?}", cs);
     match_optional_seq(cs,
         match_reph,
         |cs| match_seq(cs,
@@ -567,8 +556,8 @@ fn match_vowel_syllable(cs: &[char]) -> Option<usize> {
     )
 }
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 fn match_standalone_syllable(cs: &[char]) -> Option<usize> {
-    //println!("match_standalone_syllable {:?}", cs);
     match_either_seq(cs,
         |cs| match_optional_seq(cs,
             |cs| match_either(cs,
@@ -601,12 +590,11 @@ fn match_standalone_syllable(cs: &[char]) -> Option<usize> {
 }
 
 fn match_symbol_syllable(cs: &[char]) -> Option<usize> {
-    //println!("match_symbol_syllable {:?}", cs);
     match_seq(cs, match_s, match_syllable_tail)
 }
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 fn match_broken_syllable(cs: &[char]) -> Option<usize> {
-    //println!("match_broken_syllable {:?}", cs);
     match_nonempty(cs,
         |cs| match_optional_seq(cs,
             match_reph,
@@ -630,14 +618,23 @@ fn match_broken_syllable(cs: &[char]) -> Option<usize> {
     )
 }
 
-fn match_syllable(cs: &[char]) -> Option<usize> {
-    match_either(cs, match_consonant_syllable, |cs| {
-        match_either(cs, match_vowel_syllable, |cs| {
-            match_either(cs, match_standalone_syllable, |cs| {
-                match_either(cs, match_symbol_syllable, match_broken_syllable)
-            })
-        })
-    })
+fn match_syllable(cs: &[char]) -> Option<(usize, Syllable)> {
+    let consonant = (match_consonant_syllable(cs), Syllable::Consonant);
+    let vowel = (match_vowel_syllable(cs), Syllable::Vowel);
+    let standalone = (match_standalone_syllable(cs), Syllable::Standalone);
+    let symbol = (match_symbol_syllable(cs), Syllable::Symbol);
+    let broken = (match_broken_syllable(cs), Syllable::Broken);
+
+    // To prevent incorrect splitting (and mis-categorisation) of a syllable,
+    // greediest syllable match, wins. In the event of a tie, precedence is
+    // consonant > vowel > standalone > symbol > broken
+    let syllables = &mut [consonant, vowel, standalone, symbol, broken];
+    syllables.sort_by(|(len1, _), (len2, _)| len2.cmp(len1));
+
+    match syllables[0] {
+        (Some(len), syllable_type) => Some((len, syllable_type)),
+        (None, _) => None,
+    }
 }
 
 struct SyllableIter {
@@ -662,7 +659,7 @@ impl Iterator for SyllableIter {
             let cs = &self.buf[self.i..];
             if cs.len() == 0 { return None; }
             match match_syllable(cs) {
-                Some(len) => {
+                Some((len, _)) => {
                     assert_ne!(len, 0);
                     let s = cs[0..len].iter().collect();
                     self.i += len;
@@ -674,7 +671,7 @@ impl Iterator for SyllableIter {
                         // ignore numbers and modifying letters
                         None
                     } else {
-                        //let s = cs[0..1].iter().collect();
+                        // let s = cs[0..1].iter().collect();
                         let s = cs.iter().collect();
                         Some(Some(Err(s)))
                     }
