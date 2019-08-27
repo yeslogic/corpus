@@ -685,6 +685,7 @@ impl Iterator for SyllableIter {
     }
 }
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 fn indic_character(ch: char) -> (Option<ShapingClass>, Option<MarkPlacementSubclass>) {
     use MarkPlacementSubclass::*;
     use ShapingClass::*;
@@ -821,7 +822,7 @@ fn indic_character(ch: char) -> (Option<ShapingClass>, Option<MarkPlacementSubcl
         0x097F => (Some(Consonant), None),                      // Bba
 
         // Bengali character table
-        0x0980 => (Some(Placeholder), None),                          // Anji
+        0x0980 => (Some(ConsonantPlaceholder), None),                 // Anji
         0x0981 => (Some(Bindu), Some(TopPosition)),                   // Candrabindu
         0x0982 => (Some(Bindu), Some(RightPosition)),                 // Anusvara
         0x0983 => (Some(Visarga), Some(RightPosition)),               // Visarga
@@ -1031,7 +1032,7 @@ fn indic_character(ch: char) -> (Option<ShapingClass>, Option<MarkPlacementSubcl
         0x0A4E => (None, None),                                  // unassigned
         0x0A4F => (None, None),                                  // unassigned
         0x0A50 => (None, None),                                  // unassigned
-        0x0A51 => (None, None),                                  // Udaat
+        0x0A51 => (Some(Cantillation), None),                    // Udaat
         0x0A52 => (None, None),                                  // unassigned
         0x0A53 => (None, None),                                  // unassigned
         0x0A54 => (None, None),                                  // unassigned
@@ -1999,8 +2000,8 @@ fn indic_character(ch: char) -> (Option<ShapingClass>, Option<MarkPlacementSubcl
         0x1CF2 => (Some(Visarga), None),                      // Sign Ardhavisarga
         0x1CF3 => (Some(Visarga), None),                      // Sign Rotated Ardhavisarga
         0x1CF4 => (Some(Cantillation), Some(TopPosition)),    // Tone Candra Above
-        0x1CF5 => (Some(Consonant), None),                    // Sign Jihvamuliya
-        0x1CF6 => (Some(Consonant), None),                    // Sign Upadhmaniya
+        0x1CF5 => (Some(ConsonantWithStacker), None),         // Sign Jihvamuliya
+        0x1CF6 => (Some(ConsonantWithStacker), None),         // Sign Upadhmaniya
         0x1CF7 => (None, None),                               // Sign Atikrama
         0x1CF8 => (Some(Cantillation), None),                 // Tone Ring Above
         0x1CF9 => (Some(Cantillation), None),                 // Tone Double Ring Above
@@ -2076,6 +2077,7 @@ fn indic_character(ch: char) -> (Option<ShapingClass>, Option<MarkPlacementSubcl
         // Grantha marks character table
         0x11301 => (Some(Bindu), Some(TopPosition)),     // Grantha Candrabindu
         0x11303 => (Some(Visarga), Some(RightPosition)), // Grantha Visarga
+        0x1133B => (Some(Nukta), Some(BottomPosition)),  // Combining Bindu Below
         0x1133C => (Some(Nukta), Some(BottomPosition)),  // Grantha Nukta
 
         // Miscellaneous character table
@@ -3487,6 +3489,7 @@ fn indic_name(ch: char) -> Option<&'static str> {
         // Grantha marks character table
         0x11301 => Some("Grantha Candrabindu"),
         0x11303 => Some("Grantha Visarga"),
+        0x1133B => Some("Combining Bindu Below"),
         0x1133C => Some("Grantha Nukta"),
 
         // Miscellaneous character table
