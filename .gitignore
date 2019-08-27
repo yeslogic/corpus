@@ -1,12 +1,10 @@
 .DS_Store
 
-wikipedia/*.xml
+wikipedia/*
+!wikipedia/download.sh
 
-data/words.*
+words/
 data/syl.*
-
-corpus
-syllables
 
 /target
 **/*.rs.bk
