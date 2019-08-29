@@ -268,11 +268,7 @@ fn match_nonempty(cs: &[char], f: impl FnOnce(&[char]) -> Option<usize>) -> Opti
 }
 
 fn match_optional(cs: &[char], f: impl FnOnce(&[char]) -> Option<usize>) -> Option<usize> {
-    if let Some(n) = f(cs) {
-        Some(n)
-    } else {
-        Some(0)
-    }
+    Some(f(cs).unwrap_or(0))
 }
 
 fn match_optional_seq(
@@ -290,12 +286,9 @@ fn match_repeat_num(
 ) -> Option<usize> {
     let mut total: usize = 0;
     for _i in 0..num {
-        if let Some(n) = f(cs) {
-            total += n;
-            cs = &cs[n..];
-        } else {
-            return None;
-        }
+        let n = f(cs)?;
+        total += n;
+        cs = &cs[n..];
     }
     Some(total)
 }
@@ -323,15 +316,9 @@ fn match_seq(
     f1: impl FnOnce(&[char]) -> Option<usize>,
     f2: impl FnOnce(&[char]) -> Option<usize>,
 ) -> Option<usize> {
-    if let Some(n1) = f1(cs) {
-        if let Some(n2) = f2(&cs[n1..]) {
-            Some(n1 + n2)
-        } else {
-            None
-        }
-    } else {
-        None
-    }
+    let n1 = f1(cs)?;
+    let n2 = f2(&cs[n1..])?;
+    Some(n1 + n2)
 }
 
 fn match_either(
@@ -373,7 +360,7 @@ fn match_z(cs: &[char]) -> Option<usize> {
     match_either(cs, |cs| match_one(cs, zwj), |cs| match_one(cs, zwnj))
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 fn match_reph(cs: &[char]) -> Option<usize> {
     match_either(
         cs,
@@ -382,7 +369,7 @@ fn match_reph(cs: &[char]) -> Option<usize> {
     )
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 fn match_cn(cs: &[char]) -> Option<usize> {
     match_seq(cs,
         match_c,
@@ -393,7 +380,7 @@ fn match_cn(cs: &[char]) -> Option<usize> {
     )
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 fn match_forced_rakar(cs: &[char]) -> Option<usize> {
     match_seq(
         cs,
@@ -416,7 +403,7 @@ fn match_s(cs: &[char]) -> Option<usize> {
     )
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 fn match_matra_group(cs: &[char]) -> Option<usize> {
     match_repeat_upto(cs, 3, match_z,
         |cs| {
@@ -436,7 +423,7 @@ fn match_matra_group(cs: &[char]) -> Option<usize> {
     )
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 fn match_syllable_tail(cs: &[char]) -> Option<usize> {
     match_optional_seq(cs,
         |cs| match_optional_seq(cs,
@@ -456,7 +443,7 @@ fn match_syllable_tail(cs: &[char]) -> Option<usize> {
     )
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 fn match_halant_group(cs: &[char]) -> Option<usize> {
     match_optional_seq(cs,
         match_z,
@@ -487,9 +474,9 @@ fn match_medial_group(cs: &[char]) -> Option<usize> {
     match_optional(cs, |cs| match_one(cs, consonant_medial))
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 fn match_halant_or_matra_group(cs: &[char]) -> Option<usize> {
-    // this can match a short sequence so we expand and reorder it
+    // This can match a short sequence so we expand and reorder it
     match_either(cs,
         |cs| match_seq(cs,
             |cs| match_one(cs, halant),
@@ -503,7 +490,7 @@ fn match_halant_or_matra_group(cs: &[char]) -> Option<usize> {
     )
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 fn match_consonant_syllable(cs: &[char]) -> Option<usize> {
     match_optional_seq(cs,
         |cs| match_either(cs,
@@ -528,7 +515,7 @@ fn match_consonant_syllable(cs: &[char]) -> Option<usize> {
     )
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 fn match_vowel_syllable(cs: &[char]) -> Option<usize> {
     match_optional_seq(cs,
         match_reph,
@@ -556,13 +543,13 @@ fn match_vowel_syllable(cs: &[char]) -> Option<usize> {
     )
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 fn match_standalone_syllable(cs: &[char]) -> Option<usize> {
     match_either_seq(cs,
         |cs| match_optional_seq(cs,
             |cs| match_either(cs,
-                    |cs| match_one(cs, repha),
-                    |cs| match_one(cs, consonant_with_stacker),
+                |cs| match_one(cs, repha),
+                |cs| match_one(cs, consonant_with_stacker),
             ),
             |cs| match_one(cs, placeholder)
         ),
@@ -593,7 +580,7 @@ fn match_symbol_syllable(cs: &[char]) -> Option<usize> {
     match_seq(cs, match_s, match_syllable_tail)
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 fn match_broken_syllable(cs: &[char]) -> Option<usize> {
     match_nonempty(cs,
         |cs| match_optional_seq(cs,
