@@ -100,8 +100,8 @@ enum Syllable {
 }
 
 fn shaping_class(ch: char) -> Option<ShapingClass> {
-    let (opt_shaping, _) = indic_character(ch);
-    opt_shaping
+    let (shaping, _) = indic_character(ch);
+    shaping
 }
 
 fn consonant(ch: char) -> bool {
@@ -221,12 +221,6 @@ fn consonant_medial(ch: char) -> bool {
 fn symbol(ch: char) -> bool {
     match shaping_class(ch) {
         Some(ShapingClass::Symbol) => true,
-        _ => false,
-    }
-}
-
-fn avagraha(ch: char) -> bool {
-    match shaping_class(ch) {
         Some(ShapingClass::Avagraha) => true,
         _ => false,
     }
@@ -241,7 +235,6 @@ fn consonant_with_stacker(ch: char) -> bool {
 
 fn other(ch: char) -> bool {
     match shaping_class(ch) {
-        // FIXME Some(ShapingClass::Other) => true,
         Some(ShapingClass::Number) => true,
         Some(ShapingClass::ModifyingLetter) => true,
         _ => false,
@@ -436,10 +429,7 @@ fn match_syllable_tail(cs: &[char]) -> Option<usize> {
                 )
             )
         ),
-        |cs| match_repeat_upto(cs, 3,
-            |cs| match_one(cs, avagraha),
-            |cs| match_repeat_upto(cs, 2, |cs| match_one(cs, vedic_sign), match_unit),
-        )
+        |cs| match_repeat_upto(cs, 3, |cs| match_one(cs, vedic_sign), match_unit),
     )
 }
 
