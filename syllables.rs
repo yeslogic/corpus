@@ -1,19 +1,28 @@
-use std::collections::{HashSet, HashMap};
-use std::cmp;
-use std::io;
-use std::io::BufRead;
+use std::collections::{HashMap, HashSet};
+use std::io::{self, BufRead};
+use std::{cmp, env};
+
+mod myanmar;
 
 fn main() {
+    let args: Vec<String> = env::args().collect();
+    if args.len() != 2 {
+        println!("Usage: syllables SCRIPT");
+        return;
+    }
+
     let stdin = io::stdin();
     let mut set = HashSet::new();
     let mut bad = HashMap::new();
-    for res in stdin.lock().lines() {
+    for (lineno, res) in stdin.lock().lines().enumerate() {
         let line = res.unwrap();
-        for res in SyllableIter::new(&line) {
+        for res in SyllableIter::new(&line, &args[1]) {
             match res {
-                Ok(s) => { set.insert(s); }
+                Ok(s) => {
+                    set.insert(s);
+                }
                 Err(s) => {
-                    bad.insert(s, line.clone());
+                    bad.insert(s, (lineno + 1, line.clone()));
                 }
             }
         }
@@ -23,21 +32,31 @@ fn main() {
     for s in syllables {
         println!("{}", s);
     }
-    let mut bad: Vec<(String, String)> = bad.drain().collect();
-    bad.sort();
-    for (ref s, ref line) in bad {
-        println!("bad: {:?} {} in line: {}", s, friendly(s), friendly(line));
+    let mut bad: Vec<_> = bad.drain().collect();
+    bad.sort_by_key(|rec| rec.1 .0); // sort by line number
+    for (ref s, (lineno, ref line)) in bad {
+        println!(
+            "bad: {:?} {} in line ({}): {}",
+            s,
+            friendly(s),
+            lineno,
+            friendly(line)
+        );
     }
 }
 
 fn friendly(s: &str) -> String {
-    let v: Vec<String> = s.chars().map(char_to_string).map(|s| {
-        let mut ss = String::new();
-        ss.push('[');
-        ss.push_str(&s);
-        ss.push(']');
-        ss
-    }).collect();
+    let v: Vec<String> = s
+        .chars()
+        .map(char_to_string)
+        .map(|s| {
+            let mut ss = String::new();
+            ss.push('[');
+            ss.push_str(&s);
+            ss.push(']');
+            ss
+        })
+        .collect();
     v.as_slice().join(" + ")
 }
 
@@ -617,13 +636,20 @@ fn match_syllable(cs: &[char]) -> Option<(usize, Syllable)> {
 struct SyllableIter {
     buf: Vec<char>,
     i: usize,
+    match_fn: fn(&[char]) -> Option<(usize, Syllable)>,
 }
 
 impl SyllableIter {
-    pub fn new(s: &str) -> Self {
+    pub fn new(s: &str, script: &str) -> Self {
+        let match_fn = if script == "my" {
+            myanmar::match_syllable
+        } else {
+            match_syllable
+        };
         SyllableIter {
             buf: s.chars().collect(),
-            i: 0
+            i: 0,
+            match_fn,
         }
     }
 }
@@ -634,15 +660,19 @@ impl Iterator for SyllableIter {
     fn next(&mut self) -> Option<Self::Item> {
         let res = {
             let cs = &self.buf[self.i..];
-            if cs.len() == 0 { return None; }
-            match match_syllable(cs) {
+            if cs.len() == 0 {
+                return None;
+            }
+            // eprintln!("i = {}", self.i);
+            match (self.match_fn)(cs) {
                 Some((len, _)) => {
                     assert_ne!(len, 0);
                     let s = cs[0..len].iter().collect();
+                    // eprintln!("good: '{s}'");
                     self.i += len;
                     Some(Some(Ok(s)))
                 }
-                _ => {
+                None => {
                     self.i += 1;
                     if other(cs[0]) {
                         // ignore numbers and modifying letters
@@ -650,6 +680,7 @@ impl Iterator for SyllableIter {
                     } else {
                         // let s = cs[0..1].iter().collect();
                         let s = cs.iter().collect();
+                        // eprintln!("bad: '{}'", cs[0]);
                         Some(Some(Err(s)))
                     }
                 }

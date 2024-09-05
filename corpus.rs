@@ -1,13 +1,13 @@
-use std::collections::HashSet;
 use std::borrow::Cow;
 use std::char;
+use std::collections::HashSet;
 use std::env;
 use std::io;
 use std::io::BufRead;
 
 extern crate regex;
 
-use regex::{Regex, Captures};
+use regex::{Captures, Regex};
 
 #[derive(Copy, Clone)]
 enum Script {
@@ -19,6 +19,7 @@ enum Script {
     Gurmukhi,
     Oriya,
     Malayalam,
+    Myanmar,
     Kannada,
     Sinhala,
 }
@@ -47,12 +48,13 @@ fn main() {
                     Escape::None => Cow::from(line),
                     Escape::Json => {
                         json_re.replace_all(&line, |caps: &Captures| {
-                            let ds: Vec<u32> = caps[1].chars().map(|c| c.to_digit(16).unwrap()).collect();
+                            let ds: Vec<u32> =
+                                caps[1].chars().map(|c| c.to_digit(16).unwrap()).collect();
                             let u = (ds[0] << 12) | (ds[1] << 8) | (ds[2] << 4) | ds[3];
                             let c = char::from_u32(u).unwrap_or(' '); // to catch surrogates
                             c.to_string()
                         })
-                    },
+                    }
                     Escape::Html => {
                         html_re.replace_all(&line, |caps: &Captures| {
                             match &caps[0] {
@@ -65,9 +67,10 @@ fn main() {
                                 }
                             }
                         })
-                    },
+                    }
                 };
-                for word in line.split(|c| !char_of_interest(script, c))
+                for word in line
+                    .split(|c| !char_of_interest(script, c))
                     .filter(|w| cool_word(script, w))
                     .map(make_word)
                 {
@@ -97,6 +100,7 @@ fn get_script(s: &str) -> Option<Script> {
         "pa" => Some(Script::Gurmukhi),
         "or" => Some(Script::Oriya),
         "ml" => Some(Script::Malayalam),
+        "my" => Some(Script::Myanmar),
         "kn" => Some(Script::Kannada),
         "si" => Some(Script::Sinhala),
         _ => None,
@@ -118,65 +122,55 @@ fn char_of_interest(script: Script, c: char) -> bool {
 
 fn indic_script_char(script: Script, c: char) -> bool {
     match script {
-        Script::Devanagari => {
-            devanagari_char(c) ||
-            vedic_extensions_char(c) ||
-            misc_char(c)
-        },
+        Script::Devanagari => devanagari_char(c) || vedic_extensions_char(c) || misc_char(c),
         Script::Bengali => {
-            bengali_char(c) ||
-            vedic_extensions_char(c) ||
-            devanagari_anudatta_char(c) ||
-            misc_char(c)
-        },
+            bengali_char(c)
+                || vedic_extensions_char(c)
+                || devanagari_anudatta_char(c)
+                || misc_char(c)
+        }
         Script::Tamil => {
-            tamil_char(c) ||
-            grantha_marks_char(c) ||
-            vedic_extensions_char(c) ||
-            devanagari_anudatta_char(c) ||
-            misc_char(c)
-        },
+            tamil_char(c)
+                || grantha_marks_char(c)
+                || vedic_extensions_char(c)
+                || devanagari_anudatta_char(c)
+                || misc_char(c)
+        }
         Script::Telugu => {
-            telugu_char(c) ||
-            vedic_extensions_char(c) ||
-            devanagari_anudatta_char(c) ||
-            misc_char(c)
-        },
+            telugu_char(c)
+                || vedic_extensions_char(c)
+                || devanagari_anudatta_char(c)
+                || misc_char(c)
+        }
         Script::Gujarati => {
-            gujarati_char(c) ||
-            vedic_extensions_char(c) ||
-            devanagari_anudatta_char(c) ||
-            misc_char(c)
-        },
+            gujarati_char(c)
+                || vedic_extensions_char(c)
+                || devanagari_anudatta_char(c)
+                || misc_char(c)
+        }
         Script::Gurmukhi => {
-            gurmukhi_char(c) ||
-            vedic_extensions_char(c) ||
-            devanagari_anudatta_char(c) ||
-            misc_char(c)
-        },
+            gurmukhi_char(c)
+                || vedic_extensions_char(c)
+                || devanagari_anudatta_char(c)
+                || misc_char(c)
+        }
         Script::Oriya => {
-            oriya_char(c) ||
-            vedic_extensions_char(c) ||
-            devanagari_anudatta_char(c) ||
-            misc_char(c)
-        },
+            oriya_char(c) || vedic_extensions_char(c) || devanagari_anudatta_char(c) || misc_char(c)
+        }
         Script::Malayalam => {
-            malayalam_char(c) ||
-            vedic_extensions_char(c) ||
-            devanagari_anudatta_char(c) ||
-            misc_char(c)
-        },
+            malayalam_char(c)
+                || vedic_extensions_char(c)
+                || devanagari_anudatta_char(c)
+                || misc_char(c)
+        }
+        Script::Myanmar => myanmar_char(c) || vedic_extensions_char(c) || myanmar_misc_char(c),
         Script::Kannada => {
-            kannada_char(c) ||
-            vedic_extensions_char(c) ||
-            devanagari_anudatta_char(c) ||
-            misc_char(c)
-        },
-        Script::Sinhala => {
-            sinhala_char(c) ||
-            vedic_extensions_char(c) ||
-            misc_char(c)
-        },
+            kannada_char(c)
+                || vedic_extensions_char(c)
+                || devanagari_anudatta_char(c)
+                || misc_char(c)
+        }
+        Script::Sinhala => sinhala_char(c) || vedic_extensions_char(c) || misc_char(c),
     }
 }
 
@@ -185,7 +179,7 @@ fn latin_combining_char(c: char) -> bool {
     cp >= 0x300 && cp <= 0x36F
 }
 
-fn indic_script_specific_char(script: Script, c: char) -> bool {
+fn script_specific_char(script: Script, c: char) -> bool {
     match script {
         Script::Devanagari => devanagari_char(c),
         Script::Bengali => bengali_char(c),
@@ -195,6 +189,7 @@ fn indic_script_specific_char(script: Script, c: char) -> bool {
         Script::Gurmukhi => gurmukhi_char(c),
         Script::Oriya => oriya_char(c),
         Script::Malayalam => malayalam_char(c),
+        Script::Myanmar => myanmar_char(c),
         Script::Kannada => kannada_char(c),
         Script::Sinhala => sinhala_char(c),
     }
@@ -207,8 +202,7 @@ fn bengali_char(c: char) -> bool {
 
 fn devanagari_char(c: char) -> bool {
     let cp = c as u32;
-    (cp >= 0x900 && cp <= 0x97F) ||
-    (cp >= 0xA8E0 && cp <= 0xA8FF)
+    (cp >= 0x900 && cp <= 0x97F) || (cp >= 0xA8E0 && cp <= 0xA8FF)
 }
 
 fn gujarati_char(c: char) -> bool {
@@ -229,6 +223,32 @@ fn kannada_char(c: char) -> bool {
 fn malayalam_char(c: char) -> bool {
     let cp = c as u32;
     cp >= 0xD00 && cp <= 0xD7F
+}
+
+fn myanmar_char(c: char) -> bool {
+    // U+1000..U+109F Myanmar block
+    // U+AA60..U+AA7F Myanmar Extended A
+    // U+A9E0..U+A9FF Myanmar Extended B
+    matches!(c,
+        '\u{1000}'..='\u{109f}' | '\u{AA60}' ..= '\u{AA7F}' | '\u{A9E0}' ..= '\u{A9FF}'
+    )
+}
+
+fn myanmar_misc_char(c: char) -> bool {
+    // match c {
+    //     '\u{00A0}' => true, // No-break space
+    //     '\u{200C}' => true, // Zero-width non-joiner
+    //     '\u{200D}' => true, //‍ Zero-width joiner
+    //     '\u{2010}' => true, // Hyphen
+    //     '\u{2011}' => true, // No-break hyphen
+    //     '\u{2012}' => true, // Figure dash
+    //     '\u{2013}' => true, // En dash
+    //     '\u{2014}' => true, // Em dash
+    //     '\u{25CC}' => true, // Dotted circle
+    //     _ => false,
+    // }
+
+    c == '\u{200C}' || c == '\u{200D}' || c == '\u{25CC}' // zwnj, zwj, dotted circle
 }
 
 fn oriya_char(c: char) -> bool {
@@ -273,7 +293,7 @@ fn misc_char(c: char) -> bool {
 }
 
 fn cool_word(script: Script, word: &str) -> bool {
-    word.chars().any(|c| indic_script_specific_char(script, c))
+    word.chars().any(|c| script_specific_char(script, c))
 }
 
 fn make_word(s: &str) -> String {
@@ -307,4 +327,3 @@ fn non_empty(word: &&str) -> bool {
     !word.is_empty()
 }
 */
-
